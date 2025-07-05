@@ -51,7 +51,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'rainorshine.urls'
+ROOT_URLCONF = 'shynecast.urls'
 
 TEMPLATES = [
     {
@@ -68,7 +68,7 @@ TEMPLATES = [
     },
 ]
 
-# WSGI_APPLICATION = 'rainorshine.wsgi.application'
+# WSGI_APPLICATION = 'shynecast.wsgi.application'
 
 
 # Database
