@@ -21,6 +21,6 @@ from weather.views import homeview
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', homeview, name='home'),  # Root URL
-    path('RainOrShine/', homeview, name='index'),  # Main weather page
+    path('shynecast/', homeview, name='index'),  # Main weather page
     path('weather/<str:city_name>/', homeview, name='weather_by_city'),  # Weather by city
 ]
