@@ -7,80 +7,58 @@ BASE_URL = "http://api.openweathermap.org/data/2.5/weather?"
 
 def get_weather_data(city='Indore'):
     try:
+        # Load environment variables
         load_dotenv()
-        getdata = os.getenv('hi')
-        
-        if not getdata:
+        raw_key = os.getenv('hi')
+
+        if not raw_key:
             return {'error': 'API key not found. Please check your .env file.'}
-        
-        def data(longStr):
-            mid_index = (len(longStr) - 28) // 2
-            str = longStr[mid_index:mid_index + 32]
-            return str
 
-        restring = data(getdata)
-        retext = restring[::-1]
+        # Extract and decode API key from hidden string
+        def extract_key(encoded):
+            mid_index = (len(encoded) - 28) // 2
+            sub_str = encoded[mid_index:mid_index + 32]
+            return sub_str[::-1]
 
-        url = BASE_URL + "appid=" + retext + "&q=" + city
+        api_key = extract_key(raw_key)
+
+        # Prepare request URL with metric units
+        url = BASE_URL + f"appid={api_key}&q={city.strip()}&units=metric"
         response = requests.get(url)
-        
-        # Check if request was successful
+
+        # Handle bad HTTP response
         if response.status_code != 200:
             return {'error': f'API request failed with status code: {response.status_code}'}
-        
+
         response_data = response.json()
 
-        # Check if city was found
+        # Check for presence of main weather info
         if 'main' not in response_data:
             return {'error': f'Weather information not available for {city}. Please check the city name.'}
 
-        def kelvin_celsius(kelvin):
-            return kelvin - 273.15
+        # Extract and process weather data
+        main = response_data['main']
+        wind = response_data.get('wind', {})
+        sys_info = response_data.get('sys', {})
 
-        temp_kelvin = response_data['main']['temp']
-        temp_celsius = kelvin_celsius(temp_kelvin)
-        feels_like_kelvin = response_data['main']['feels_like']
-        feels_like_celsius = kelvin_celsius(feels_like_kelvin)
-        min_kelvin = response_data['main']['temp_min']
-        min_celsius = kelvin_celsius(min_kelvin)
-        max_kelvin = response_data['main']['temp_max']
-        max_celsius = kelvin_celsius(max_kelvin)
-        humidity = response_data['main']['humidity']
-        pressure = response_data['main']['pressure']
-        visibility = response_data.get('visibility', 0) / 1000  # Convert to km
-        wind_speed = response_data.get('wind', {}).get('speed', 0)
-        description = response_data['weather'][0]['description']
-
-        # Handle timezone and sunrise/sunset
-        timezone_offset = response_data.get('timezone', 0)
-        sunrise_time = dt.datetime.utcfromtimestamp(
-            response_data['sys']['sunrise'] + timezone_offset
-        )
-        sunset_time = dt.datetime.utcfromtimestamp(
-            response_data['sys']['sunset'] + timezone_offset
-        )
-
-        sunrise_time_formatted = sunrise_time.strftime('%I:%M %p')
-        sunset_time_formatted = sunset_time.strftime('%I:%M %p')
-
-        # Sea level might not always be available
-        sea_level = response_data['main'].get('sea_level', response_data['main'].get('grnd_level', 0))
-
-        return {
+        weather_info = {
             'location': city,
-            'temp_celsius': temp_celsius,
-            'feels_like_celsius': feels_like_celsius,
-            'min_celsius': min_celsius,
-            'max_celsius': max_celsius,
-            'humidity': humidity,
-            'pressure': pressure,
-            'visibility': visibility,
-            'wind_speed': wind_speed,
-            'description': description,
-            'sunrise_time': sunrise_time_formatted,
-            'sunset_time': sunset_time_formatted,
-            'sea_level': sea_level
+            'temp_celsius': main.get('temp'),
+            'feels_like_celsius': main.get('feels_like'),
+            'min_celsius': main.get('temp_min'),
+            'max_celsius': main.get('temp_max'),
+            'humidity': main.get('humidity'),
+            'pressure': main.get('pressure'),
+            'visibility': response_data.get('visibility', 0) / 1000,  # in km
+            'wind_speed': wind.get('speed', 0) * 3.6,  # Convert m/s to km/h
+            'description': response_data['weather'][0]['description'].capitalize(),
+            'sunrise_time': dt.datetime.utcfromtimestamp(sys_info.get('sunrise', 0) + response_data.get('timezone', 0)).strftime('%I:%M %p'),
+            'sunset_time': dt.datetime.utcfromtimestamp(sys_info.get('sunset', 0) + response_data.get('timezone', 0)).strftime('%I:%M %p'),
+            'sea_level': main.get('sea_level', main.get('grnd_level', 0)),
         }
+
+        return weather_info
+
     except requests.exceptions.RequestException as e:
         return {'error': f'Network error: {str(e)}'}
     except KeyError as e:
@@ -88,7 +66,6 @@ def get_weather_data(city='Indore'):
     except Exception as e:
         return {'error': f'An unexpected error occurred: {str(e)}'}
 
-# Call the function and print the result
+# Uncomment to test
 # if __name__ == "__main__":
-#     weather_data = get_weather_data()
-#     print(weather_data)
+#     print(get_weather_data())

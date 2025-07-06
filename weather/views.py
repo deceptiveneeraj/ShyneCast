@@ -9,7 +9,7 @@ def homeview(request: HttpRequest, city_name: str = "Indore"):
     
     # Handle city parameter from GET request (for search functionality)
     if request.GET.get('city'):
-        city = request.GET.get('city')
+        city = request.GET.get('city', '').strip()
     
     data = get_weather_data(city)
     
